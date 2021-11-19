@@ -12,9 +12,15 @@ class TokenData(BaseModel):
     email: Optional[str] = None
 
 
-class User(BaseModel):
+class EmailBody(BaseModel):
     email: str
+
+
+class BaseUser(EmailBody):
     name: str
+
+
+class ExtendedUser(BaseUser):
     is_active: bool = False
     is_verified: bool = False
     token: Optional[str] = None
@@ -22,12 +28,26 @@ class User(BaseModel):
     is_superuser: bool = False
 
 
-class UserInDB(User):
+class UserInDB(ExtendedUser):
     hashed_password: str
 
 
-class UserRegister(BaseModel):
-    email: str
-    name: str
-    password: str
-    password_confirm: str
+class NewPassword(BaseModel):
+    new_password: str
+    new_password_confirm: str
+
+
+class UserIn(BaseUser, NewPassword):
+    pass
+
+
+class PasswordChange(NewPassword):
+    old_password: str
+
+
+class VerificationToken(BaseModel):
+    token: str
+
+
+class VerificationTokenWithPassword(VerificationToken, NewPassword):
+    pass

@@ -10,7 +10,7 @@ class User(Model):
     is_active = fields.BooleanField(default=True)
     is_verified = fields.BooleanField(default=False)
     token = fields.CharField(max_length=512, null=True)
-    token_expiration = fields.DatetimeField(null=True)
+    token_expiration = fields.FloatField(null=True)
     is_superuser = fields.BooleanField(default=False)
 
     def __str__(self):
