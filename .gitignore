@@ -333,3 +333,6 @@ easy_budget/media/
 
 /.envs/.local/
 /.idea/
+
+# Database
+*.sqlite3
