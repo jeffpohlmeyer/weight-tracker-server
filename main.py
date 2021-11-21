@@ -1,50 +1,46 @@
-from typing import Optional
-from enum import Enum
+import os
+from dotenv import load_dotenv
 
+import uvicorn
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi_users import FastAPIUsers
+from fastapi_users.authentication import JWTAuthentication
+
+from users.managers import get_user_manager
+from users.models import User, UserCreate, UserUpdate, UserDB
+
+load_dotenv()
+
+SECRET = os.getenv("SECRET")
+jwt_authentication = JWTAuthentication(
+    secret=SECRET, lifetime_seconds=3600, tokenUrl="auth/jwt/login"
+)
 
 app = FastAPI()
-
-
-class Item(BaseModel):
-    name: str
-    price: float
-    is_offer: Optional[bool] = None
-
-
-class ModelName(str, Enum):
-    alexnet = "alexnet"
-    resnet = "resnet"
-    lenet = "lenet"
+fast_api_users = FastAPIUsers(
+    get_user_manager, [jwt_authentication], User, UserCreate, UserUpdate, UserDB
+)
+app.include_router(
+    fast_api_users.get_auth_router(jwt_authentication, requires_verification=True),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
+app.include_router(fast_api_users.get_register_router(), prefix="/auth", tags=["auth"])
+app.include_router(fast_api_users.get_verify_router(), prefix="/auth", tags=["auth"])
+app.include_router(
+    fast_api_users.get_reset_password_router(), prefix="/auth", tags=["auth"]
+)
+app.include_router(
+    fast_api_users.get_users_router(requires_verification=True),
+    prefix="/users",
+    tags=["users"],
+)
 
 
 @app.get("/")
-async def read_root():
-    return {"Hello": "World"}
+async def root():
+    return {"message": "Hello world"}
 
 
-@app.get("/items/{item_id}")
-async def read_item(item_id: int, q: Optional[str] = None):
-    return {"item_id": item_id, "q": q}
-
-
-@app.put("/items/{item_id}")
-def update_item(item_id: int, item: Item):
-    return {"item_name": item.name, "item_id": item_id}
-
-
-@app.get("/models/{model_name}")
-async def get_model(model_name: ModelName):
-    if model_name == ModelName.alexnet:
-        return {"model_name": model_name, "message": "Deep Learning FTW!"}
-
-    if model_name.value == "lenet":
-        return {"model_name": model_name, "message": "LeCNN all the images"}
-
-    return {"model_name": model_name, "message": "Have some residuals"}
-
-
-# if __name__ == '__main__':
-#     import uvicorn
-#     uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+if __name__ == "__main__":
+    uvicorn.run("main:app", port=8001, reload=True)

@@ -1,0 +1,3 @@
+databases[sqlite]
+fastapi[all]
+fastapi-users[sqlalchemy]
