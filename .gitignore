@@ -327,7 +327,7 @@ easy_budget/media/
 
 
 .ipython/
-.env
+.benv
 
 .envs/*
 

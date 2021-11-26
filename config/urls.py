@@ -16,10 +16,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from user.urls import router as user_router
+from weight_points_server.user.urls import router as user_router
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("admin/", include("admin_honeypot.urls", namespace="admin_honeypot")),
+    path("SSsjhKo1OdrmDFhq8bOO9kJgMyFnzyOS/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
 ]
 
