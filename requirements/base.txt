@@ -1,0 +1,6 @@
+alembic
+asyncpg
+databases[postgresql]
+fastapi[all]
+fastapi-users[tortoise-orm]
+psycopg2

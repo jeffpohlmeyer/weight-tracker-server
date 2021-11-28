@@ -1,14 +1,9 @@
-import databases
-import sqlalchemy
 from sqlalchemy import Column, Integer, String, Enum
+from sqlalchemy.orm import relationship
 from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 
+from common.db import Base, database
 from .models import UserDB, SexEnum, WeekdayEnum
-
-DATABASE_URL = "sqlite:///./test.db"
-database = databases.Database(DATABASE_URL)
-Base: DeclarativeMeta = declarative_base()
 
 
 class UserTable(Base, SQLAlchemyBaseUserTable):
@@ -17,12 +12,9 @@ class UserTable(Base, SQLAlchemyBaseUserTable):
     height = Column(Integer)
     sex = Column(Enum(SexEnum))
     weigh_in_day = Column(Enum(WeekdayEnum))
+    week = relationship("WeekTable", back_populates="user")
+    day = relationship("DayTable", back_populates="user")
 
-
-engine = sqlalchemy.create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
-)
-# Base.metadata.create_all(engine)
 
 users = UserTable.__table__
 

@@ -1,21 +1,9 @@
 from typing import Optional
-from enum import Enum, IntEnum
 from fastapi_users import models
+from fastapi_users.db import TortoiseBaseUserModel
+from tortoise.contrib.pydantic import PydanticModel
 
-
-class SexEnum(str, Enum):
-    male = "male"
-    female = "female"
-
-
-class WeekdayEnum(IntEnum):
-    Sunday = 0
-    Monday = 1
-    Tuesday = 2
-    Wednesday = 3
-    Thursday = 4
-    Friday = 5
-    Saturday = 6
+from common.models import SexEnum, WeekdayEnum
 
 
 class User(models.BaseUser):
@@ -42,8 +30,15 @@ class UserUpdate(models.BaseUserUpdate):
     weigh_in_day: Optional[WeekdayEnum]
 
 
-class UserDB(User, models.BaseUserDB):
+class UserModel(TortoiseBaseUserModel):
+    name: Optional[str]
     weight: Optional[float]
     height: Optional[int]
     sex: Optional[SexEnum]
     weigh_in_day: Optional[WeekdayEnum]
+
+
+class UserDB(User, models.BaseUserDB, PydanticModel):
+    class Config:
+        orm_mode = True
+        orig_model = UserModel

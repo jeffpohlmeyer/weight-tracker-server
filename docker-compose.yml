@@ -1,0 +1,49 @@
+version: '3'
+
+volumes:
+  local_postgres_data: {}
+  local_postgres_data_backups: {}
+
+services:
+  fastapi: &fastapi
+    build:
+      context: .
+      dockerfile: ./compose/local/fastapi/Dockerfile
+    image: weight_points_local_fastapi
+    container_name: weight_points_fastapi
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app:z
+    env_file:
+      - ./.envs/.local/.fastapi
+      - ./.envs/.local/.postgres
+    ports:
+      - "8001:8001"
+    command:
+      /start
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: weight_points_production_postgres
+    container_name: weight_points_postgres
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data:Z
+      - local_postgres_data_backups:/backups:z
+    env_file:
+      - ./.envs/.local/.postgres
+    ports:
+      - "5432:5432"
+
+#  pgadmin:
+#    container_name: pgadmin
+#    image: dpage/pgadmin4
+#    environment:
+#      - PGADMIN_DEFAULT_EMAIL=pgadmin4@pgadmin.org
+#      - PGADMIN_DEFAULT_PASSWORD=admin
+#    ports:
+#      - "5050:80"
+#    depends_on:
+#      - postgres

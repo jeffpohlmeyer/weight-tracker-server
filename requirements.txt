@@ -1,5 +1,0 @@
-alembic
-databases[sqlite]
-fastapi[all]
-fastapi-users[sqlalchemy]
-fastapi-mail

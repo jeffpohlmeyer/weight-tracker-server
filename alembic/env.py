@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -5,10 +7,17 @@ from sqlalchemy import pool
 
 from alembic import context
 
+load_dotenv()
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", "sqlite:///./test.db")
+DATABASE_URL = os.getenv("FASTAPI_DATABASE_URL")
+if DATABASE_URL is None:
+    DATABASE_URL = "sqlite:///./test.db"
+
+# config.set_main_option("sqlalchemy.url", "sqlite:///./test.db")
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -20,6 +29,7 @@ fileConfig(config.config_file_name)
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 from users.db import Base, UserTable
+from tracking.db import WeekTable, DayTable
 
 target_metadata = Base.metadata
 

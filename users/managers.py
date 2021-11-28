@@ -12,7 +12,6 @@ from fastapi import Depends, Request, BackgroundTasks
 from fastapi_users import BaseUserManager
 from fastapi_users.jwt import generate_jwt
 from starlette.requests import Request
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import BaseModel, EmailStr
 
 from .db import get_user_db
