@@ -4,4 +4,5 @@ from .views import ProfileViewSet
 
 
 router = DefaultRouter()
-router.register(r"users", ProfileViewSet, basename="user_profile")
+router.register(r"auth", ProfileViewSet, basename="user_auth")
+# router.register(r"auth", AuthViewSet, basename="auth")

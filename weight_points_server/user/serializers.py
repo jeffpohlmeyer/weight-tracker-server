@@ -16,3 +16,23 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = "__all__"
+
+
+class PasswordForgotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["email"]
+
+
+class PasswordResetSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(max_length=64)
+
+    class Meta:
+        model = Profile
+        fields = ["token", "password"]
+
+
+class PasswordTokenGenerateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ["token"]

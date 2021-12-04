@@ -330,9 +330,11 @@ easy_budget/media/
 .benv
 
 .envs/*
+.env
 
 /.envs/.local/
-/.idea/
+.idea
+.iml
 
 # Database
 *.sqlite3
