@@ -333,7 +333,7 @@ easy_budget/media/
 .env
 
 /.envs/.local/
-.idea
+/.idea/
 .iml
 
 # Database

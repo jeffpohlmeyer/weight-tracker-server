@@ -66,6 +66,8 @@ THIRD_PARTY_APPS = [
     "rest_framework",
     "corsheaders",
     "admin_honeypot",
+    "drf_yasg",
+    "rest_framework_simplejwt",
 ]
 
 LOCAL_APPS = [
@@ -87,7 +89,7 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
-AUTH_USER_MODEL = "auth.User"
+AUTH_USER_MODEL = "user.CustomUser"
 
 # PASSWORDS
 # ------------------------------------------------------------------------------
@@ -265,6 +267,12 @@ REST_FRAMEWORK = {
 SITE_NAME = env("SITE_NAME", default="example.com")
 DOMAIN = env("SITE_DOMAIN", default="example.com")
 SITE_URL = env("SITE_URL", default="http://example.com")
+
+
+# Simple-JWT
+REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = (
+    "rest_framework_simplejwt.authentication.JWTAuthentication",
+)
 
 
 # # Djoser
