@@ -5,9 +5,13 @@ from .models import CustomUser
 
 
 class UserAdmin(BaseUserAdmin):
+    list_display = [
+        "email",
+    ]
+    exclude = ("username",)
     fieldsets = (
-        (None, {"fields": ("username", "password")}),
-        (_("Personal info"), {"fields": ("first_name", "last_name", "email")}),
+        (None, {"fields": ("email", "password")}),
+        (_("Personal info"), {"fields": ("first_name", "last_name")}),
         (
             _("Profile info"),
             {
@@ -42,7 +46,6 @@ class UserAdmin(BaseUserAdmin):
             {
                 "classes": ("wide",),
                 "fields": (
-                    "username",
                     "email",
                     "first_name",
                     "last_name",

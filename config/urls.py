@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
 from django.conf.urls import url
 
 from rest_framework import permissions
@@ -39,9 +40,15 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
-urlpatterns = [
-    path("admin/", include("admin_honeypot.urls", namespace="admin_honeypot")),
-    path("SSsjhKo1OdrmDFhq8bOO9kJgMyFnzyOS/", admin.site.urls),
+if settings.DEBUG:
+    urlpatterns = [path("admin/", admin.site.urls)]
+else:
+    urlpatterns = [
+        path("admin/", include("admin_honeypot.urls", namespace="admin_honeypot")),
+        path("SSsjhKo1OdrmDFhq8bOO9kJgMyFnzyOS/", admin.site.urls),
+    ]
+
+urlpatterns += [
     path("api-auth/", include("rest_framework.urls")),
     url(
         r"^swagger(?P<format>\.json|\.yaml)$",

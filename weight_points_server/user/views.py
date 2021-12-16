@@ -1,6 +1,3 @@
-import secrets
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -17,15 +14,16 @@ from rest_framework_simplejwt.views import (
 from drf_yasg.utils import swagger_auto_schema
 
 from .serializers import (
-    UserSerializer,
-    PasswordForgotSerializer,
     AuthTokenSerializer,
     PasswordResetSerializer,
     UserCreateSerializer,
-    UserUpdateSerializer,
+    UserSerializer,
     EmailChangeSerializer,
+    PasswordForgotSerializer,
     PasswordChangeSerializer,
 )
+
+from .utils import create_token, create_token_expiration
 
 User = get_user_model()
 
@@ -68,7 +66,7 @@ info_dict = {
         ],
     ),
     "update": dict(
-        serializer=UserUpdateSerializer,
+        serializer=UserSerializer,
     ),
 }
 
@@ -97,7 +95,7 @@ class AuthViewSet(
         if name is not None:
             return info_dict.get(name).get("serializer")
 
-        return UserSerializer
+        return UserCreateSerializer
 
     def get_permissions(self):
         name = self.get_method_name()
@@ -106,6 +104,17 @@ class AuthViewSet(
                 permission() for permission in info_dict.get(name).get("permission")
             ]
         return super(AuthViewSet, self).get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            UserSerializer(instance).data,
+            status=status.HTTP_201_CREATED,
+            headers=headers,
+        )
 
     @action(detail=False, methods=["POST"], name="Forgot Password")
     def forgot_password(self, request, *args, **kwargs):
@@ -118,9 +127,11 @@ class AuthViewSet(
                 result = self.queryset.filter(email=email)
                 if len(result) == 1:
                     user = result.first()
-                    user.token = secrets.token_urlsafe(64)
-                    user.token_expiration = timezone.now() + timedelta(minutes=60)
-                    user.save(update_fields=["token", "token_expiration"])
+
+                    user.token = create_token()
+                    user.token_expiration = create_token_expiration()
+                    user.message_type = "password_forgot"
+                    user.save()
 
             return Response(
                 "If an account exists with that email then you should receive a password reset email shortly.",
@@ -137,8 +148,8 @@ class AuthViewSet(
             data = serializer.data
             token = data.get("token")
             user = User.objects.get(token=token)
-            user.token = secrets.token_urlsafe(64)
-            user.token_expiration = timezone.now() + timedelta(seconds=60)
+            user.token = create_token()
+            user.token_expiration = create_token_expiration()
             user.save(update_fields=["token", "token_expiration"])
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
@@ -158,6 +169,7 @@ class AuthViewSet(
             user.set_password(password)
             user.token = None
             user.token_expiration = None
+            user.message_type = "password_change_confirm"
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
@@ -180,6 +192,7 @@ class AuthViewSet(
             user.token = None
             user.token_expiration = None
             user.email_validated = True
+            user.message_type = "registration_confirm"
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -197,6 +210,7 @@ class AuthViewSet(
                 raise ValidationError("Incorrect password")
 
             self.request.user.set_password(serializer.data.get("password"))
+            self.request.user.message_type = "password_change_confirm"
             self.request.user.save()
         except Exception as e:
             return Response(dict(detail=str(e)), status=status.HTTP_400_BAD_REQUEST)

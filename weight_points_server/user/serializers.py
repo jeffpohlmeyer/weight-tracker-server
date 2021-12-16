@@ -1,19 +1,11 @@
-import secrets
-from datetime import timedelta
-
-from django.utils import timezone
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.serializers import raise_errors_on_nested_writes
 from rest_framework.utils import model_meta
 
+from .utils import create_token_and_expiration
+
 User = get_user_model()
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["first_name", "last_name", "email"]
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -22,18 +14,14 @@ class UserCreateSerializer(serializers.ModelSerializer):
         fields = ["first_name", "last_name", "email", "password"]
 
     def create(self, validated_data):
-        data = dict(
-            **validated_data,
-            token=secrets.token_urlsafe(64),
-            token_expiration=timezone.now() + timedelta(minutes=60)
-        )
-        return super(UserCreateSerializer, self).create(data)
+        return User.objects.create_user(**validated_data)
 
 
-class UserUpdateSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+            "email",
             "first_name",
             "last_name",
             "weight",
@@ -67,8 +55,9 @@ class EmailChangeSerializer(serializers.ModelSerializer):
             else:
                 setattr(instance, attr, value)
 
-        instance.token = secrets.token_urlsafe(64)
-        instance.token_expiration = timezone.now() + timedelta(minutes=60)
+        token_info = create_token_and_expiration()
+        instance.token = token_info.get("token")
+        instance.token_expiration = token_info.get("token_expiration")
 
         instance.save(update_fields=["email", "token", "token_expiration"])
 
@@ -90,10 +79,8 @@ class PasswordChangeSerializer(serializers.ModelSerializer):
         fields = ["password", "old_password"]
 
 
-class PasswordForgotSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["email"]
+class PasswordForgotSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
 
 class PasswordResetSerializer(serializers.ModelSerializer):

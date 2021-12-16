@@ -1,44 +1,56 @@
 from typing import Optional, List
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.core.mail import EmailMultiAlternatives
 from django.core.exceptions import ImproperlyConfigured
+from django.views.generic.base import ContextMixin
 
-User = get_user_model()
-
-env = settings.env
-
-DOMAIN = env("DOMAIN")
-PROTOCOL = env("PROTOCOL")
-CONTACT_NAME_FROM = env("CONTACT_NAME_FROM")
-CONTACT_EMAIL_FROM = env("CONTACT_EMAIL_FROM")
+DOMAIN = settings.DOMAIN
+PROTOCOL = settings.PROTOCOL
+CONTACT_NAME_FROM = settings.CONTACT_NAME_FROM
+CONTACT_EMAIL_FROM = settings.CONTACT_EMAIL_FROM
 
 
-class Email:
+class Email(EmailMultiAlternatives, ContextMixin):
     _message_item = None
     _subject = dict(
         registration="Confirm your new account!",
-        registration_confirm="Your account has been confirmed!",
+        registration_confirm="Your email has been confirmed!",
         password_forgot="Reset your password",
+        password_change_confirm="Your password has changed",
+        change_email="Change your email",
+        change_email_confirm="Your email has changed",
     )
     _msg_line_1 = dict(
         registration="You are receiving this message because this email address was used to register on our site.",
         registration_confirm="Thank you for confirming your email address and validating your account!",
         password_forgot="You are receiving this message because you have forgotten your password.",
+        password_change_confirm="You are receiving this message because your password has just been changed.",
+        change_email="You are receiving this message because this address has been listed as a new possible login "
+        "email.",
+        change_email_confirm="You are receiving this message because the email you use to log in has changed.",
     )
     _msg_line_2 = dict(
         registration="To verify your account with this email address please navigate",
-        registration_confirm="",
+        registration_confirm="You should now be able to log in.",
         password_forgot="To reset your password please navigate",
+        password_change_confirm="If you did not do this then reset your password.",
+        change_email="To confirm this email address please navigate",
+        change_email_confirm="If this was done in error please navigate",
     )
     _url_path = dict(
         registration="register/verify",
         registration_confirm="",
         password_forgot="password/forgot",
+        password_change_confirm="",
+        change_email="email/change",
+        change_email_confirm="email/change/undo",
     )
 
-    def __init__(self, user: User) -> None:
+    def __init__(self, user, *args, **kwargs) -> None:
+        super(Email, self).__init__(*args, **kwargs)
         self._user = user
+        self._message_item = user.message_type
 
         if DOMAIN is None:
             raise ImproperlyConfigured("DOMAIN is not set in .env file")
@@ -46,7 +58,7 @@ class Email:
             raise ImproperlyConfigured("PROTOCOL is not set in .env file")
 
     def _message_type(self) -> Optional[str]:
-        if self._message_item in ["registration", "password_forgot"]:
+        if self._message_item in ["registration", "password_forgot", "email_change"]:
             return "token"
         return None
 
@@ -84,13 +96,13 @@ class Email:
         return expiration
 
     def _to_address(self) -> str:
+        if self._message_item == "change_email_confirm":
+            return self._user.old_email
         return self._user.email
 
     def _msg_text(self) -> str:
-        message = ""
-
         if self._message_type == "token":
-            message = f"""
+            return f"""
                 Hello from {DOMAIN}!
 
                 {self._get_msg_line_1()}
@@ -100,12 +112,20 @@ class Email:
                 Regards,
                 The team at {DOMAIN}.
             """
-        return message
+        else:
+            return f"""
+                Hello from {DOMAIN}!
+
+                {self._get_msg_line_1()}
+
+                {self._get_msg_line_2()}
+                Regards,
+                The team at {DOMAIN}.
+            """
 
     def _msg_html(self) -> str:
-        message = ""
         if self._message_type == "token":
-            message = f"""
+            return f"""
                 <html>
                   <head></head>
                   <body>
@@ -120,7 +140,20 @@ class Email:
                   </body>
                 </html>
             """
-        return message
+        else:
+            return f"""
+                <html>
+                  <head></head>
+                  <body>
+                    <h3>Hello from {DOMAIN}!</h3>
+                    <p>{self._get_msg_line_1()}</p>
+                    <p>{self._get_msg_line_2()}</p>
+                    <br />
+                    <p>Regards</p>
+                    <p>The team at {DOMAIN}</p>
+                  </body>
+                </html>
+            """
 
     def generate_messages(self) -> List[str]:
         if self._message_type is None:
@@ -130,26 +163,5 @@ class Email:
 
         return [text, html]
 
-    def send_registration_email() -> None:
-        send_message("registration")
-
-    def send_registration_confirm_email():
-        send_message("registration_confirm")
-
-    def send_password_forgot_email():
-        send_message("password_forgot")
-
-    def send_password_change_confirm_email():
-        send_message("password_change_confirm")
-
-    def send_change_email_address():
-        send_message("change_email_address")
-
-    def send_change_email_address_confirm():
-        send_message("change_email_address_confirm")
-
-    def send_token_regeneration_email():
-        send_message("token_regeneration")
-
-    def send_message(message_name):
-        print(f"sending email {message_name}")
+    def send_message(self):
+        print(f"sending email {self._message_item}")
