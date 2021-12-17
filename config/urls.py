@@ -23,9 +23,9 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-# from weight_points_server.user.urls import router as user_router
+from weight_points_server.user.urls import router as user_router
 
-# from weight_points_server.user.views import token_obtain_view, token_refresh_view
+from weight_points_server.user.views import token_obtain_view, token_refresh_view
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -60,8 +60,8 @@ urlpatterns += [
         schema_view.with_ui("swagger", cache_timeout=0),
         name="schema-swagger-ui",
     ),
-    path("auth/", include("weight_points_server.users.urls")),
-    path("auth/", include("weight_points_server.user.djoser.urls.jwt")),
+    path("auth/login/", token_obtain_view, name="token_obtain_pair"),
+    path("auth/token/refresh", token_refresh_view, name="token_refresh"),
 ]
 
 urlpatterns += user_router.urls
