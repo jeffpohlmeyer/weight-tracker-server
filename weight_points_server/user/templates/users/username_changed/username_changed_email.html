@@ -1,0 +1,23 @@
+{% extends 'users/base.html' %}
+
+{% load i18n %}
+
+{% block body %}
+  <h2>
+    {% blocktrans %}
+      Username Changed
+    {% endblocktrans %}
+  </h2>
+  <p>{% blocktrans %}Hello {{ user }}.{% endblocktrans %}</p>
+  <p>{% trans "Your username has been changed!" %}</p>
+  <p>{% trans "If you did not change your username then please go and reset it now." %}</p>
+  <div>
+    {% trans "Thanks" %},
+  </div>
+  <div>
+    {% blocktrans %}
+      The team at {{ site_name }}
+    {% endblocktrans %}
+  </div>
+
+{% endblock %}

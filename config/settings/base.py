@@ -267,6 +267,7 @@ REST_FRAMEWORK = {
 # ------------------------------------------------------------------------------
 SITE_NAME = env("SITE_NAME", default="example.com")
 SITE_URL = env("SITE_URL", default="http://example.com")
+DOMAIN = env("DOMAIN", default="example.com")
 CONTACT_NAME_FROM = env("CONTACT_NAME_FROM")
 CONTACT_EMAIL_FROM = env("CONTACT_EMAIL_FROM")
 

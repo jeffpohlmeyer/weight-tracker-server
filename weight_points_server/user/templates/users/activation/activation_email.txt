@@ -1,0 +1,12 @@
+{% load i18n %}
+
+{% trans "Account Activation" %}.
+
+{% blocktrans %}
+Hello {{ user }}.
+Your email has been used to sign up for an account at {{ site_url }}.
+If this email has reached you in error please disregard.
+Otherwise, please click here {% endblocktrans %}: {{ activation_url }} {% trans "to activate your account" %}.
+
+{% trans "Thanks" %},
+{% blocktrans %}The team at {{ site_name }}{% endblocktrans %}

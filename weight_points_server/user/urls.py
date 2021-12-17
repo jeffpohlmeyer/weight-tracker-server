@@ -1,8 +1,16 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import AuthViewSet  # , PasswordViewSet
+from .views import CheckEmailUsernameView, CustomDjoserViewset
+from djoser.urls.jwt import urlpatterns as djoser_urls
 
+app_name = "users"
 
 router = DefaultRouter()
-router.register(r"auth", AuthViewSet, basename="user_auth")
-# router.register(r"password", PasswordViewSet, basename="password")
+router.register("users", CustomDjoserViewset)
+
+urlpatterns = router.urls
+
+urlpatterns += djoser_urls
+
+urlpatterns += [path("check-email-username/", CheckEmailUsernameView.as_view())]
