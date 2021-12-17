@@ -26,3 +26,4 @@ djangorestframework-simplejwt~=5.0.0
 drf-yasg[validation]
 django-templated-mail>=1.1.1
 social-auth-app-django==5.0.0 # https://github.com/python-social-auth/social-app-django
+djoser==2.1.0
