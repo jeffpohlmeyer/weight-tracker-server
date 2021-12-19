@@ -1,0 +1,23 @@
+{% extends 'user/base.html' %}
+{% load i18n %}
+
+{% block body %}
+  <h2>
+    {% blocktrans %}
+      Activation Successful
+    {% endblocktrans %}
+  </h2>
+  <p>
+    {% blocktrans %}
+      Hello {{ user }}.  You have successfully activated your account and are ready to go!
+    {% endblocktrans %}
+  </p>
+  <p>
+    {% trans "Thanks" %},
+  </p>
+  <p>
+    {% blocktrans %}
+      The team at {{ site_name }}
+    {% endblocktrans %}
+  </p>
+{% endblock %}

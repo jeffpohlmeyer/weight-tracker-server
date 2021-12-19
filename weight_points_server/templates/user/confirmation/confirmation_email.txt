@@ -1,0 +1,10 @@
+{% load i18n %}
+
+{% trans "Activation Successful" %}
+
+{% blocktrans %}
+Hello {{ user }}.  You have successfully activated your account and are ready to go!
+{% endblocktrans %}
+
+{% trans "Thanks" %},
+{% blocktrans %}The team at {{ site_name }}{% endblocktrans %}
