@@ -1,271 +1,112 @@
 from django.contrib.auth import get_user_model
-from django.utils import timezone
-from django.core.exceptions import ValidationError
-from rest_framework import mixins, serializers, status, viewsets
+from django.contrib.auth.models import update_last_login
+from django.utils.timezone import now
+from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-)
-from drf_yasg.utils import swagger_auto_schema
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .serializers import (
-    AuthTokenSerializer,
-    PasswordResetSerializer,
-    UserCreateSerializer,
-    UserSerializer,
-    EmailChangeSerializer,
-    PasswordForgotSerializer,
-    PasswordChangeSerializer,
-)
+from djoser.signals import user_activated
+from djoser.views import UserViewSet
+from djoser.compat import get_user_email
+from djoser.conf import settings
 
-from .utils import create_token, create_token_expiration
 
 User = get_user_model()
 
 
-info_dict = {
-    "Forgot Password": dict(
-        serializer=PasswordForgotSerializer,
-        permission=[
-            AllowAny,
-        ],
-    ),
-    "Generate Token From Token": dict(
-        serializer=AuthTokenSerializer,
-        permission=[
-            AllowAny,
-        ],
-    ),
-    "Reset Password": dict(
-        serializer=PasswordResetSerializer,
-        permission=[
-            AllowAny,
-        ],
-    ),
-    "Change Email": dict(
-        serializer=EmailChangeSerializer,
-    ),
-    "Change Password": dict(
-        serializer=PasswordChangeSerializer,
-    ),
-    "Validate Email": dict(
-        serializer=AuthTokenSerializer,
-        permission=[
-            AllowAny,
-        ],
-    ),
-    "create": dict(
-        serializer=UserCreateSerializer,
-        permission=[
-            AllowAny,
-        ],
-    ),
-    "update": dict(
-        serializer=UserSerializer,
-    ),
-}
+class CustomDjoserViewset(UserViewSet):
+    def perform_update(self, serializer):
+        super(UserViewSet, self).perform_update(serializer)
+        user = serializer.instance
+        # should we send activation email after update?
+        if settings.SEND_ACTIVATION_EMAIL and not user.is_active:
+            context = {"user": user}
+            to = [get_user_email(user)]
+            settings.EMAIL.activation(self.request, context).send(to)
 
+    @staticmethod
+    def generate_jwt_pair(user):
+        # Pull from jwt ObtainTokenPairView to generate token on activation
+        refresh = RefreshToken.for_user(user)
+        data = dict(refresh=str(refresh), access=str(refresh.access_token))
 
-class AuthViewSet(
-    mixins.CreateModelMixin,
-    # mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    # mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
-):
-    queryset = User.objects.all()
+        if api_settings.UPDATE_LAST_LOGIN:
+            update_last_login(None, user)
 
-    def get_method_name(self):
-        name = None
-        if self.name is not None:
-            name = self.name
-        elif self.request.method == "POST":
-            name = "create"
-        elif self.request.method == "PATCH" or self.request.method == "PUT":
-            name = "update"
-        return name
+        return data
 
-    def get_serializer_class(self):
-        name = self.get_method_name()
-        if name is not None:
-            return info_dict.get(name).get("serializer")
-
-        return UserCreateSerializer
-
-    def get_permissions(self):
-        name = self.get_method_name()
-        if name is not None and info_dict.get(name).get("permission") is not None:
-            return [
-                permission() for permission in info_dict.get(name).get("permission")
-            ]
-        return super(AuthViewSet, self).get_permissions()
-
-    def create(self, request, *args, **kwargs):
+    # Overwrite Djoser activation route to return token(s) when confirming email
+    @action(["post"], detail=False)
+    def activation(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        headers = self.get_success_headers(serializer.data)
+        user = serializer.user
+        user.is_active = True
+        user.save()
+
+        user_activated.send(sender=self.__class__, user=user, request=self.request)
+
+        if settings.SEND_CONFIRMATION_EMAIL:
+            context = {"user": user}
+            to = [get_user_email(user)]
+            settings.EMAIL.confirmation(self.request, context).send(to)
+
+        return Response(self.generate_jwt_pair(user), status=status.HTTP_200_OK)
+
+    @action(["post"], detail=False)
+    def reset_password_confirm(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        serializer.user.set_password(serializer.data["new_password"])
+        if hasattr(serializer.user, "last_login"):
+            serializer.user.last_login = now()
+        serializer.user.save()
+
+        if settings.PASSWORD_CHANGED_EMAIL_CONFIRMATION:
+            context = {"user": serializer.user}
+            to = [get_user_email(serializer.user)]
+            settings.EMAIL.password_changed_confirmation(self.request, context).send(to)
+
         return Response(
-            UserSerializer(instance).data,
-            status=status.HTTP_201_CREATED,
-            headers=headers,
+            data=dict(**self.generate_jwt_pair(serializer.user)),
+            status=status.HTTP_200_OK,
         )
 
-    @action(detail=False, methods=["POST"], name="Forgot Password")
-    def forgot_password(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            data = serializer.data
-            email = data.get("email")
-            if email is not None:
-                result = self.queryset.filter(email=email)
-                if len(result) == 1:
-                    user = result.first()
 
-                    user.token = create_token()
-                    user.token_expiration = create_token_expiration()
-                    user.message_type = "password_forgot"
-                    user.save()
+class CheckEmailUsernameView(APIView):
+    permission_classes = (AllowAny,)
 
+    @staticmethod
+    def get(request, *args, **kwargs):
+        email = request.query_params.get("email")
+        username = request.query_params.get("username")
+        if email is None and username is None:
             return Response(
-                "If an account exists with that email then you should receive a password reset email shortly.",
-                status=status.HTTP_200_OK,
+                "Please provide an email address or username",
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
-            return Response(dict(detail=str(e)), status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=["POST"], name="Generate Token From Token")
-    def regenerate_token(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            data = serializer.data
-            token = data.get("token")
-            user = User.objects.get(token=token)
-            user.token = create_token()
-            user.token_expiration = create_token_expiration()
-            user.save(update_fields=["token", "token_expiration"])
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response(dict(detail=str(e)), status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=["POST"], name="Reset Password")
-    def reset_password(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            data = serializer.data
-            token = data.get("token")
-            password = data.get("password")
-            user = User.objects.get(token=token)
-            if user.token_expiration < timezone.now():
-                raise ValidationError("Token expired")
-            user.set_password(password)
-            user.token = None
-            user.token_expiration = None
-            user.message_type = "password_change_confirm"
-            user.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response(dict(detail=str(e)), status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=["PATCH"], name="Change Email")
-    def change_email(self, request, *args, **kwargs):
-        return super(AuthViewSet, self).partial_update(request, *args, **kwargs)
-
-    @action(detail=False, methods=["POST"], name="Validate Email")
-    def validate_email(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            data = serializer.data
-            token = data.get("token")
-            user = User.objects.get(token=token)
-            if user.token_expiration < timezone.now():
-                raise ValidationError("Token expired")
-            user.token = None
-            user.token_expiration = None
-            user.email_validated = True
-            user.message_type = "registration_confirm"
-            user.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        except Exception as e:
-            return Response(dict(detail=str(e)), status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=["PATCH"], name="Change Password")
-    def change_password(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            if not self.request.user.check_password(
-                serializer.data.get("old_password")
-            ):
-                raise ValidationError("Incorrect password")
-
-            self.request.user.set_password(serializer.data.get("password"))
-            self.request.user.message_type = "password_change_confirm"
-            self.request.user.save()
-        except Exception as e:
-            return Response(dict(detail=str(e)), status=status.HTTP_400_BAD_REQUEST)
-
-
-class TokenObtainPairResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-    refresh = serializers.CharField()
-
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
-class DecoratedTokenObtainPairView(TokenObtainPairView):
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: TokenObtainPairResponseSerializer}
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
-
-
-token_obtain_view = DecoratedTokenObtainPairView.as_view()
-
-
-class TokenRefreshResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
-class DecoratedTokenRefreshView(TokenRefreshView):
-    @swagger_auto_schema(responses={status.HTTP_200_OK: TokenRefreshResponseSerializer})
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
-
-
-token_refresh_view = DecoratedTokenRefreshView.as_view()
-
-
-class TokenVerifyResponseSerializer(serializers.Serializer):
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
-class DecoratedTokenVerifyView(TokenVerifyView):
-    @swagger_auto_schema(responses={status.HTTP_200_OK: TokenVerifyResponseSerializer})
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        elif email is None:
+            try:
+                User.objects.get(username=username)
+                return Response(
+                    "An account with that username already exists.",
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except User.DoesNotExist:
+                return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            try:
+                User.objects.get(email=email)
+                return Response(
+                    "An account with that email address already exists.",
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except User.DoesNotExist:
+                return Response(status=status.HTTP_204_NO_CONTENT)

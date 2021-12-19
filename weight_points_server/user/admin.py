@@ -19,10 +19,11 @@ class UserAdmin(BaseUserAdmin):
                     "weight",
                     "height",
                     "sex",
+                    "birth_date",
+                    "age",
                     "weigh_in_day",
-                    "email_validated",
-                    "token",
-                    "token_expiration",
+                    "weekly_points",
+                    "nursing",
                 )
             },
         ),
@@ -54,13 +55,17 @@ class UserAdmin(BaseUserAdmin):
                     "weight",
                     "height",
                     "sex",
+                    "birth_date",
+                    "age",
                     "weigh_in_day",
-                    "email_validated",
+                    "weekly_points",
+                    "nursing",
                 ),
             },
         ),
     )
     ordering = ("email",)
+    readonly_fields = ("age",)
 
 
 admin.site.register(CustomUser, UserAdmin)

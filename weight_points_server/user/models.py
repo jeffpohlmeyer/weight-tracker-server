@@ -1,12 +1,14 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
-from .emails import Email
-from .utils import create_token, create_token_expiration
+def set_weigh_in_day():
+    return timezone.now().today().weekday()
 
 
 class UserManager(BaseUserManager):
@@ -46,59 +48,27 @@ class UserManager(BaseUserManager):
 class CustomUser(AbstractUser):
     SEX_CHOICES = [("M", "Male"), ("F", "Female")]
     WEEKDAY_CHOICES = [
-        ("SU", "Sunday"),
-        ("M", "Monday"),
-        ("T", "Tuesday"),
-        ("W", "Wednesday"),
-        ("TR", "Thursday"),
-        ("F", "Friday"),
-        ("SA", "Saturday"),
+        (0, "Monday"),
+        (1, "Tuesday"),
+        (2, "Wednesday"),
+        (3, "Thursday"),
+        (4, "Friday"),
+        (5, "Saturday"),
+        (6, "Sunday"),
     ]
-    MESSAGE_TYPE_CHOICES = [
-        ("registration", "Registration"),
-        ("registration_confirm", "Registration Confirmation"),
-        ("password_forgot", "Forgot Password"),
-        ("password_change_confirm", "Password Change Confirmation"),
-        ("change_email", "Change Email"),
-        ("change_email_confirm", "Email Change Confirmation"),
-    ]
+    NURSING_CHOICES = [(0, "None"), (1, "Supplemental"), (2, "Exclusive")]
 
     username = None
     email = models.EmailField(_("email address"), unique=True)
-    old_email = models.EmailField(
-        _("old email address"),
-        null=True,
-        blank=True,
-        help_text=_(
-            "This is only used in the case where a user is updating an email address. "
-            'In this case the "current" email address becomes the old one and the new email address moves into the '
-            "general email field, while being set as invalid."
-        ),
-    )
     weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     height = models.IntegerField(null=True, blank=True)
     sex = models.CharField(max_length=1, choices=SEX_CHOICES, null=True, blank=True)
-    weigh_in_day = models.CharField(max_length=2, choices=WEEKDAY_CHOICES, default="SU")
-    token = models.CharField(
-        default=create_token, max_length=1024, null=True, blank=True
+    weigh_in_day = models.IntegerField(
+        choices=WEEKDAY_CHOICES, default=set_weigh_in_day
     )
-    token_expiration = models.DateTimeField(
-        default=create_token_expiration, null=True, blank=True
-    )
-    email_validated = models.BooleanField(
-        _("email validated"),
-        default=False,
-        help_text=_(
-            "Boolean that indicates whether the email address has been validated or not."
-        ),
-    )
-    message_type = models.CharField(
-        max_length=32,
-        choices=MESSAGE_TYPE_CHOICES,
-        default="registration",
-        null=True,
-        blank=True,
-    )
+    birth_date = models.DateField(null=True, blank=True)
+    weekly_points = models.IntegerField(default=49)
+    nursing = models.IntegerField(default=0, choices=NURSING_CHOICES)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -106,16 +76,17 @@ class CustomUser(AbstractUser):
     objects = UserManager()
 
     def __str__(self):
-        return f"{self.email}, weight: {self.weight}, weigh-in day: {self.weigh_in_day}"
+        return self.email
 
-    def save(self, message_type=None, *args, **kwargs):
-        super(CustomUser, self).save(*args, **kwargs)
-        self.message_type = kwargs.get("message_type")
-
-
-@receiver(post_save, sender=CustomUser)
-def save_profile(sender, instance, **kwargs):
-    if instance.message_type is not None:
-        Email(instance).send_message()
-    print("sender", sender)
-    print("instance", instance)
+    @property
+    def age(self):
+        today = timezone.now().today().date()
+        if today.month > self.birth_date.month:
+            return today.year - self.birth_date.year
+        elif today.month == self.birth_date.month:
+            if today.day >= self.birth_date.day:
+                return today.year - self.birth_date.year
+            else:
+                return today.year - self.birth_date.year - 1
+        else:
+            return today.year - self.birth_date.year - 1

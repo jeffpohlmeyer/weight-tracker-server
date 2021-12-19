@@ -21,9 +21,7 @@ django-cors-headers==3.7.0 # https://github.com/adamchainz/django-cors-headers
 
 # Misc
 # ------------------------------------------------------------------------------
-django-admin-honeypot==1.1.0 # https://github.com/dmpayton/django-admin-honeypot
-djangorestframework-simplejwt~=5.0.0
+djangorestframework-simplejwt~=4.8.0
 drf-yasg[validation]
 django-templated-mail>=1.1.1
-social-auth-app-django==5.0.0 # https://github.com/python-social-auth/social-app-django
-djoser==2.1.0
+social-auth-app-django==4.0.0 # https://github.com/python-social-auth/social-app-django

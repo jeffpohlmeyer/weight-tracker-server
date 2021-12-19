@@ -9,3 +9,4 @@ sentry-sdk==0.20.3  # https://github.com/getsentry/sentry-python
 # Django
 # ------------------------------------------------------------------------------
 django-anymail[mailgun]==8.2  # https://github.com/anymail/django-anymail
+django-admin-honeypot==1.1.0 # https://github.com/dmpayton/django-admin-honeypot

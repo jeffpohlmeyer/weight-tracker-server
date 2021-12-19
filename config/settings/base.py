@@ -72,7 +72,9 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     # Your stuff: custom apps go here
-    "weight_points_server.user"
+    "weight_points_server.djoser",
+    "weight_points_server.user",
+    "weight_points_server.time_tracking",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -305,16 +307,16 @@ DJOSER = {
     "ACTIVATION_URL": "auth/register/{uid}/{token}",
     "DEFAULT_FROM_EMAIL": DEFAULT_FROM_EMAIL,
     "SERIALIZERS": {
-        "user": "easy_budget.users.serializers.UserSerializer",
-        "current_user": "easy_budget.users.serializers.UserSerializer",
+        "user": "weight_points_server.user.serializers.UserSerializer",
+        "current_user": "weight_points_server.user.serializers.UserSerializer",
     },
     "EMAIL": {
-        "activation": "easy_budget.users.email.CustomActivationEmail",
-        "confirmation": "easy_budget.users.email.CustomConfirmationEmail",
-        "password_reset": "easy_budget.users.email.CustomPasswordResetEmail",
-        "password_changed_confirmation": "easy_budget.users.email.CustomPasswordChangedConfirmationEmail",
-        "username_changed_confirmation": "easy_budget.users.email.CustomUsernameChangedConfirmationEmail",
-        "username_reset": "easy_budget.users.email.CustomUsernameResetEmail",
+        "activation": "weight_points_server.user.email.CustomActivationEmail",
+        "confirmation": "weight_points_server.user.email.CustomConfirmationEmail",
+        "password_reset": "weight_points_server.user.email.CustomPasswordResetEmail",
+        "password_changed_confirmation": "weight_points_server.user.email.CustomPasswordChangedConfirmationEmail",
+        "username_changed_confirmation": "weight_points_server.user.email.CustomUsernameChangedConfirmationEmail",
+        "username_reset": "weight_points_server.user.email.CustomUsernameResetEmail",
     },
 }
 # Your stuff...
