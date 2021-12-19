@@ -24,6 +24,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
 # from weight_points_server.user.urls import router as user_router
+from weight_points_server.time_tracking.urls import router as time_router
 
 # from weight_points_server.user.views import token_obtain_view, token_refresh_view
 
@@ -60,8 +61,10 @@ urlpatterns += [
         schema_view.with_ui("swagger", cache_timeout=0),
         name="schema-swagger-ui",
     ),
-    path("auth/", include("weight_points_server.users.urls")),
-    path("auth/", include("weight_points_server.user.djoser.urls.jwt")),
+    path("auth/", include("weight_points_server.user.urls")),
+    # path('auth/', include('djoser.urls')),
+    path("auth/", include("djoser.urls.jwt")),
 ]
+urlpatterns += time_router.urls
 
-urlpatterns += user_router.urls
+# urlpatterns += user_router.urls
