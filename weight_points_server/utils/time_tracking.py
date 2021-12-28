@@ -2,7 +2,9 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from weight_points_server.time_tracking.models import Week, Day
+from weight_points_server.food_tracking.models import Meal
+from weight_points_server.time_tracking.models import Day, Week
+
 from .points_calculators import calculate_daily_points
 
 
@@ -23,7 +25,12 @@ def create_days(start_date, user, week, num_days):
                 user=user,
             )
         )
-    Day.objects.bulk_create(days)
+    created_days = Day.objects.bulk_create(days)
+    meals = []
+    for day in created_days:
+        for meal in range(4):
+            meals.append(Meal(name=meal, day=day, user=user))
+    Meal.objects.bulk_create(meals)
     return dates[-1]
 
 

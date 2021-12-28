@@ -1,21 +1,18 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
 from django.utils.timezone import now
+from djoser.compat import get_user_email
+from djoser.conf import settings
+from djoser.signals import user_activated
+from djoser.views import UserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-
-from djoser.signals import user_activated
-from djoser.views import UserViewSet
-from djoser.compat import get_user_email
-from djoser.conf import settings
-
 
 User = get_user_model()
 

@@ -1,9 +1,9 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from django.conf import settings
 from django.utils import timezone
 
 from weight_points_server.utils.points_calculators import calculate_daily_points

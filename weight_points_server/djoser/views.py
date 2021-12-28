@@ -6,10 +6,10 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from .signals import user_activated, user_registered
-from .utils import ActionViewMixin, login_user, logout_user
 from .compat import get_user_email
 from .conf import settings
+from .signals import user_activated, user_registered
+from .utils import ActionViewMixin, login_user, logout_user
 
 User = get_user_model()
 

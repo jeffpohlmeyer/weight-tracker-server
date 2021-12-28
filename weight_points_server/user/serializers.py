@@ -1,10 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
-
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from weight_points_server.time_tracking.models import Week, Day
+from weight_points_server.time_tracking.models import Day, Week
 from weight_points_server.utils.points_calculators import calculate_daily_points
 
 User = get_user_model()

@@ -1,11 +1,12 @@
 from datetime import timedelta
-from django.utils import timezone
 
+from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Week, Day
 from weight_points_server.utils.points_calculators import calculate_daily_points
 from weight_points_server.utils.time_tracking import create_days
+
+from .models import Day, Week
 
 
 class DaySerializer(serializers.ModelSerializer):

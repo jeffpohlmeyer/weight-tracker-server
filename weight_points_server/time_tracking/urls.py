@@ -1,6 +1,6 @@
 from rest_framework.routers import DefaultRouter
 
-from .views import WeekViewSet, DayViewSet
+from .views import DayViewSet, WeekViewSet
 
 router = DefaultRouter()
 router.register("week", WeekViewSet, basename="week")

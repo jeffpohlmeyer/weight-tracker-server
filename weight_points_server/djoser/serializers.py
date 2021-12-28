@@ -6,9 +6,9 @@ from rest_framework import exceptions, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
 
-from .utils import decode_uid
 from .compat import get_user_email, get_user_email_field_name
 from .conf import settings
+from .utils import decode_uid
 
 User = get_user_model()
 

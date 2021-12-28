@@ -1,9 +1,8 @@
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMultiAlternatives
-from django.views.generic.base import ContextMixin
 from django.template.loader import get_template
-
+from django.views.generic.base import ContextMixin
 from djoser import utils
 from djoser.conf import settings as djoser_settings
 

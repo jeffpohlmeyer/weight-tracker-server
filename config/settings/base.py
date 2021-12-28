@@ -75,6 +75,7 @@ LOCAL_APPS = [
     "weight_points_server.djoser",
     "weight_points_server.user",
     "weight_points_server.time_tracking",
+    "weight_points_server.food_tracking",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

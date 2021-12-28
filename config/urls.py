@@ -13,18 +13,17 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls import url
-
-from rest_framework import permissions
-
-from drf_yasg.views import get_schema_view
+from django.contrib import admin
+from django.urls import include, path
 from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+from rest_framework import permissions
 
 # from weight_points_server.user.urls import router as user_router
 from weight_points_server.time_tracking.urls import router as time_router
+from weight_points_server.food_tracking.urls import router as food_router
 
 # from weight_points_server.user.views import token_obtain_view, token_refresh_view
 
@@ -66,5 +65,6 @@ urlpatterns += [
     path("auth/", include("djoser.urls.jwt")),
 ]
 urlpatterns += time_router.urls
+urlpatterns += food_router.urls
 
 # urlpatterns += user_router.urls
