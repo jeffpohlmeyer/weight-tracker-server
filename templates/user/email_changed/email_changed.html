@@ -1,0 +1,11 @@
+{% extends 'user/base.html' %}
+
+{% block subject %}
+      Email Changed
+{% endblock %}
+{% block body %}
+  <p>
+    Hello {{ user }}. This email address has been added to your account at {{ site_url }}.
+    To validate this new email address please click the <a href="{{ activation_url }}">activation link</a>.
+  </p>
+{% endblock %}

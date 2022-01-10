@@ -1,0 +1,11 @@
+{% extends 'user/base.html' %}
+
+{% block subject %}
+    Verification Token
+{% endblock %}
+{% block body %}
+    <p>
+        Hello {{ user }}. You have received this email because a new token has been requested for you at {{site_url}}.
+        If this email has reached you in error then please disregard it.  Otherwise, please click <a href="{{activation_url}}">here</a> to validate your account.
+    </p>
+{% endblock %}

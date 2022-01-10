@@ -1,0 +1,11 @@
+{% extends 'user/base.html' %}
+
+{% block subject %}
+      Account Activation
+{% endblock %}
+{% block body %}
+  <p>
+    Hello {{ user }}. Your email has been used to sign up for an account at {{ site_url }}. If this email has reached
+    you in error please disregard. Otherwise, please click <a href="{{ activation_url }}">here</a> to activate your account.
+  </p>
+{% endblock %}
